@@ -53,10 +53,16 @@ export class WebhookController {
         const data = JSON.parse(event.data);
         const wrapper = document.createElement('div');
         wrapper.className = 'event';
-        wrapper.innerHTML = `
-          <div class="meta">#${data.id} · ${new Date(data.receivedAt).toLocaleString()}</div>
-          <pre>${JSON.stringify(data.payload, null, 2)}</pre>
-        `;
+        wrapper.innerHTML = [
+          '<div class="meta">#',
+          data.id,
+          ' · ',
+          new Date(data.receivedAt).toLocaleString(),
+          '</div>',
+          '<pre>',
+          JSON.stringify(data.payload, null, 2),
+          '</pre>',
+        ].join('');
         eventsContainer.prepend(wrapper);
       };
 
