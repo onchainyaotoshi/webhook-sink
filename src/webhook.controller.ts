@@ -6,10 +6,11 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Req,
   Res,
   Sse,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { map, Observable } from 'rxjs';
 import { WebhookEvent, WebhookService } from './webhook.service';
@@ -79,6 +80,7 @@ export class WebhookController {
 
   @Post('webhook')
   receiveWebhook(
+    @Req() req: Request,
     @Headers('x-forwarded-for') forwardedFor: string | undefined,
     @Headers('x-real-ip') realIp: string | undefined,
     @Body() body: unknown,
@@ -94,8 +96,9 @@ export class WebhookController {
     }
 
     const forwardedIp = forwardedFor?.split(',')[0]?.trim();
-    const requestIp = forwardedIp || realIp;
-    if (!requestIp || !allowedIps.includes(requestIp)) {
+    const requestIp = forwardedIp || realIp || req.ip || req.socket?.remoteAddress;
+    const normalizedIp = requestIp?.replace(/^::ffff:/, '');
+    if (!normalizedIp || !allowedIps.includes(normalizedIp)) {
       throw new HttpException('IP not allowed', HttpStatus.FORBIDDEN);
     }
 
@@ -103,6 +106,7 @@ export class WebhookController {
       id: randomUUID(),
       receivedAt: new Date().toISOString(),
       headers: {
+        'x-request-ip': normalizedIp,
         'x-forwarded-for': forwardedFor,
         'x-real-ip': realIp,
       },
